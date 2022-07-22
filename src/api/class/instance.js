@@ -60,10 +60,12 @@ class WhatsAppInstance {
 
     async SendWebhook(type, body) {
         if (!this.allowWebhook) return
+        if (body.key.fromMe == true || body.key.participant) return
         this.axiosInstance
             .post('', {
                 type,
                 body,
+            instance: this.instance
             })
             .catch(() => {})
     }
