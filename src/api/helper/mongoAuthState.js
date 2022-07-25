@@ -20,7 +20,7 @@ const initAuthCreds = () => {
         nextPreKeyId: 1,
         firstUnuploadedPreKeyId: 1,
         accountSettings: {
-            unarchiveChats: true,
+            unarchiveChats: false,
         },
     }
 }
