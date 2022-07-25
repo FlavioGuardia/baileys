@@ -36,7 +36,7 @@ class WhatsAppInstance {
         qr: '',
         messages: [],
         qrRetry: 0,
- customWebhook: '',
+        customWebhook: '',
     }
 
     axiosInstance = axios.create({
@@ -46,8 +46,8 @@ class WhatsAppInstance {
     constructor(key, allowWebhook, webhook) {
         this.key = key ? key : uuidv4()
         this.instance.customWebhook = this.webhook ? this.webhook : webhook
-        this.allowWebhook = config.allowWebhook
-            ? config.allowWebhook
+        this.allowWebhook = config.webhookEnabled
+            ? config.webhookEnabled
             : allowWebhook
         if (this.allowWebhook && this.instance.customWebhook !== null) {
             this.allowWebhook = true
@@ -60,26 +60,23 @@ class WhatsAppInstance {
 
     async SendWebhook(type, body) {
         if (!this.allowWebhook) return
-        if(body.key.fromMe == true || body.key.participant)return
         this.axiosInstance
             .post('', {
                 type,
                 body,
-                instance: this.key
             })
             .catch(() => {})
     }
 
     async init() {
-      this.collection = mongoClient.db('whatsapp-api').collection(this.key)
-      const { state, saveCreds } = await useMongoDBAuthState(this.collection)
-      this.authState = { state: state, saveCreds: saveCreds }
-      this.socketConfig.auth = this.authState.state
-      this.socketConfig.browser = Object.values(config.browser)
-      this.instance.sock = makeWASocket(this.socketConfig)
-      this.setHandler()
-      return this
-
+        this.collection = mongoClient.db('whatsapp-api').collection(this.key)
+        const { state, saveCreds } = await useMongoDBAuthState(this.collection)
+        this.authState = { state: state, saveCreds: saveCreds }
+        this.socketConfig.auth = this.authState.state
+        this.socketConfig.browser = Object.values(config.browser)
+        this.instance.sock = makeWASocket(this.socketConfig)
+        this.setHandler()
+        return this
     }
 
     setHandler() {
@@ -113,7 +110,7 @@ class WhatsAppInstance {
                     }).exec()
                     if (!alreadyThere) {
                         const saveChat = new Chat({ key: this.key })
- await saveChat.save()
+                        await saveChat.save()
                     }
                 }
                 this.instance.online = true
@@ -151,7 +148,7 @@ class WhatsAppInstance {
         sock?.ev.on('chats.upsert', (newChat) => {
             // console.log(newChat)
             // console.log("Received new chat")
-const chats = newChat.map((chat) => {
+            const chats = newChat.map((chat) => {
                 return {
                     ...chat,
                     messages: [],
@@ -189,7 +186,7 @@ const chats = newChat.map((chat) => {
             //console.log(m)
             if (m.type === 'prepend')
                 this.instance.messages.unshift(...m.messages)
-  if (m.type !== 'notify') return
+            if (m.type !== 'notify') return
 
             this.instance.messages.unshift(...m.messages)
 
@@ -228,7 +225,7 @@ const chats = newChat.map((chat) => {
                             )
                             break
                         case 'audioMessage':
- webhookData['msgContent'] = await downloadMessage(
+                            webhookData['msgContent'] = await downloadMessage(
                                 msg.message.audioMessage,
                                 'audio'
                             )
@@ -423,7 +420,7 @@ const chats = newChat.map((chat) => {
     }
 
     async sendListMessage(to, data) {
-   await this.verifyId(this.getWhatsAppId(to))
+        await this.verifyId(this.getWhatsAppId(to))
         const result = await this.instance.sock?.sendMessage(
             this.getWhatsAppId(to),
             {
@@ -500,8 +497,7 @@ const chats = newChat.map((chat) => {
             return res
         } catch {
             return {
-
-    error: true,
+                error: true,
                 message:
                     'unable to promote some participants, check if you are admin in group or participants exists',
             }
@@ -552,12 +548,14 @@ const chats = newChat.map((chat) => {
             )
         return await this.instance.sock?.groupInviteCode(id)
     }
+
     // get Chat object from db
     async getChat(key = this.key) {
         let dbResult = await Chat.findOne({ key: key }).exec()
         let ChatObj = dbResult.chat
         return ChatObj
     }
+
     // create new group by application
     async createGroupByApp(newChat) {
         let Chats = await this.getChat()
@@ -577,7 +575,7 @@ const chats = newChat.map((chat) => {
 
     async updateGroupByApp(newChat) {
         let Chats = await this.getChat()
- Chats.find((c) => c.id === newChat[0].id).name = newChat[0].subject
+        Chats.find((c) => c.id === newChat[0].id).name = newChat[0].subject
         try {
             await this.updateDb(Chats)
         } catch (e) {
