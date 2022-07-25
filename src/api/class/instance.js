@@ -65,7 +65,7 @@ class WhatsAppInstance {
             .post('', {
                 type,
                 body,
-            instance: this.instance
+            instance: this.key
             })
             .catch(() => {})
     }
